@@ -1,13 +1,8 @@
 import re
+from SpecificWords import Specific_Words, sozgebolu
 # import nltk
 
 path = 'zhalgau'
-
-
-def sozgebolu(text):
-    result = re.findall(r'\w+', str.lower(text))
-    return result
-
 
 # ------------------------------------------------------------------------------------------
 
@@ -52,47 +47,49 @@ def openfile(i):
 
 # функция который возвращает основу слова
 def negiz(soz):
-    tgsoz = ''
-    wl = len(soz)
-    t = []
+    if soz not in Specific_Words.negizder_base:
+        tgsoz = ''
+        wl = len(soz)
+        t = []
 
-    if wl > 14:
-        f = open(path + '/13zh.txt', 'r', encoding='utf8')
+        if wl > 14:
+            f = open(path + '/13zh.txt', 'r', encoding='utf8')
 
 
-        for i in range(13, 0, -1):
-            f = openfile(i)
-            sj = soz[wl - i:]
-            buf = f.read()
-            arrj = bolu(buf)
+            for i in range(13, 0, -1):
+                f = openfile(i)
+                sj = soz[wl - i:]
+                buf = f.read()
+                arrj = bolu(buf)
 
-            for j in arrj:
-                if j == sj:
-                    t.append(soz[:wl - len(j)])
-                if j == '' or sj == '':
-                    t.append(soz[:wl])
-        f.close()
+                for j in arrj:
+                    if j == sj:
+                        t.append(soz[:wl - len(j)])
+                    if j == '' or sj == '':
+                        t.append(soz[:wl])
+            f.close()
 
-    if wl <= 14 and wl > 2:
-        f = open(path + '/13zh.txt', 'r', encoding='utf8')
+        if wl <= 14 and wl > 2:
+            f = open(path + '/13zh.txt', 'r', encoding='utf8')
 
-        for i in range(wl - 2, -1, -1):
-            f = openfile(i)
-            sj = soz[wl - i:]
-            buf = f.read()
-            arrj = bolu(buf)
+            for i in range(wl - 2, -1, -1):
+                f = openfile(i)
+                sj = soz[wl - i:]
+                buf = f.read()
+                arrj = bolu(buf)
 
-            for j in arrj:
-                if j == sj:
-                    t.append(soz[:wl - len(j)])
-                if j == '' or sj == '':
-                    t.append(soz[:wl])
-        f.close()
+                for j in arrj:
+                    if j == sj:
+                        t.append(soz[:wl - len(j)])
+                    if j == '' or sj == '':
+                        t.append(soz[:wl])
+            f.close()
 
-    if wl == 2 or wl == 1:
-        return soz
+        if wl == 2 or wl == 1:
+            return soz
 
-    return t[0]
+        return t[0]
+    return None
 
 
 # =================================================================================================

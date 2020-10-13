@@ -1,11 +1,18 @@
-from out2 import sozgebolu
 import pickle
+import re
+
+
+def sozgebolu(text):
+    result = re.findall(r'\w+', str.lower(text))
+    return result
 
 
 class Specific_Words:
     word_base = pickle.load(open('word_base.dict', 'rb'))
     abbreviation_base = pickle.load(open('abbreviation_base.dict', 'rb'))
     stop_words_base = sozgebolu(open('stopwords.txt', 'r', encoding="utf8").read())
+    negizder_base = sozgebolu(open('negizder.txt', 'r', encoding="utf8").read())
+
 
     @staticmethod
     def synonyms_searcher(word):
