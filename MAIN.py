@@ -1,5 +1,5 @@
-from Request_Generation import find, find_r
+from Request_Generation import find, find_r, splitter
 
 
 if __name__ == '__main__':
-    find()
+    find_r('Абай жолы 20.10.1942')

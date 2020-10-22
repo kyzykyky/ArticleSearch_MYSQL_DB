@@ -29,20 +29,26 @@ class Text:
 
 
 def main_search(rows, f_request):
-    result = {}
+    result = []
+    result_t = {}
+    result_kw = {}
+
     for row in rows:
         txt_obj = Text(row['id'], row['title'], row['url'])
             
-        # slst_t = text_search(row, f_request)     # Search in 'text'
+        slst_t = text_search(row, f_request)     # Search in 'text'
             
-        slst = kw_search(row, f_request)      # Search in 'keywords'
+        slst_kw = kw_search(row, f_request)      # Search in 'keywords'
 
-        # slst = {**slst_t, **slst_kw}
-
-        for res in slst:    # Clean non related (0 encounts)
-            if slst[res] > 0:
-                result[txt_obj] = slst
+        for res in slst_t:    # Clean non related (0 encounts)
+            if slst_t[res] > 0:
+                result_t[txt_obj] = slst_t
                 break
+        for res in slst_kw:    # Clean non related (0 encounts)
+            if slst_kw[res] > 0:
+                result_kw[txt_obj] = slst_kw
+                break
+        result = [result_t, result_kw]
     return result
 
 
@@ -68,5 +74,5 @@ def kw_search(row, f_request):
             first = False
         else:
             e = encount(word, tokenized) * 10
-            slst_kw[word] = e
+            slst_kw['KW' + word] = e
     return slst_kw

@@ -1,3 +1,6 @@
+import re
+
+
 class Numer:
     units = (
         u'нөл',
@@ -165,6 +168,18 @@ class Numer:
             return False
         else:
             return True
+    
+    @staticmethod
+    def is_date(date):
+        pattern = r'^(0[1-9]|[12][0-9]|3[01])[- /.](0[1-9]|1[012])[- /.](\d)+$' # dd.mm.y+
+        if re.match(pattern, date):
+            return True
+        return False
+
+    @staticmethod
+    def num2month(num):
+        if 0 < int(num) < 13:
+            return Numer.months[int(num)-1]
 
 
 if __name__ == '__main__':
@@ -173,3 +188,4 @@ if __name__ == '__main__':
     print(Numer.num2text(num), Numer.text2numITER(Numer.num2text(num)))
     print(Numer.num2roman(num), Numer.roman2numITER(Numer.num2roman(num)))
     print(Numer.is_roman('XXXX'))
+    print(Numer.is_date('12.04.1465'))

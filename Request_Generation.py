@@ -14,20 +14,18 @@ CURRENT SITUATION:
     SIMPLE SEARCH THAT CAN:
         1. FIND SYNONYMS OF REQUESTED WORDS AND ADD THEM TO REQUEST;
         2. FIND BASE OF REQUESTED WORDS AND ADD THEM TO REQUEST;
-        3. FIND NUMBERS IN REQUEST (DIGITS, WORD AND IN ROMAN FORM) AND ADD THEM TO REQUEST;
-        4. FIND ARTICLES IN SMALL MYSQL DB ONLY USING 'text' and 'keywords' FIELD.
+        3. FIND NUMBERS IN REQUEST (DIGITS, WORD AND ROMAN FORM) AND ADD THEM TO REQUEST;
+        4. FIND ARTICLES IN MYSQL DB ONLY USING 'text' and 'keywords' FIELD.
 
 REQUIRED TO ADD IN SYSTEM:
     1. TF-IDF INTEGRATION (FINDING WEIGHTS FOR WORDS);
-    2. KEYWORD SEARCH;                                                   +
-    3. SEARCH TIME OPTIMIZATION (CREATE INDEXING SYSTEM, PARALLEL ALGORITHMS);
-    4. OPTIMIZE NUMBER/DATE SEARCH, ADD VARIATIVITY OF USING DIGITS;
-    5. SIMPLE USER INTERFACE;
-    6. ADD SEARCH SUGGESTIONS.
+    2. SEARCH TIME OPTIMIZATION (CREATE INDEXING SYSTEM, PARALLEL ALGORITHMS);
+    3. OPTIMIZE NUMBER/DATE SEARCH, ADD VARIATIVITY OF USING DIGITS;
+    4. SIMPLE USER INTERFACE;
+    5. ADD SEARCH SUGGESTIONS.
 
     OPTIONAL:
-        1. ADD MORE STOPWORDS BASE;                                                                 +
-        2. CREATE BASE OF BASIS OF THE WORD TO OPTIMIZE NEGIZ() FUNCTION.
+        CREATE BASE OF BASIS OF THE WORD TO OPTIMIZE NEGIZ() FUNCTION.
 '''
 
 
@@ -47,10 +45,25 @@ def rem_dup(lst):
 def splitter(request):              # Creates subrequests
     request = request.strip()       # Check for empty request
     if request != '':
+
+        nums_in_request = []
+        date = ''
+        check = False
+        for word in request.split(' '):     # Add dates
+            if Numer.is_date(word):
+                nums_in_request.append(word)
+                date = word
+                check = True
+        if check:
+            request = request.replace(date, '')
+            d = nums_in_request[0].split('.')
+            nums_in_request.append(d[0])
+            nums_in_request.append(Numer.num2month(d[1]))
+            nums_in_request.append(d[2])
+
         request = ' '.join([word for word in sozgebolu(str.lower(request)) if word not in Specific_Words.stop_words_base])
         splitted = request.split()  # Removed stop words
 
-        nums_in_request = []
         for word in splitted:
             if word.isdigit():
                 nume = int(word)
@@ -59,12 +72,12 @@ def splitter(request):              # Creates subrequests
                     nums_in_request.append(Numer.num2text(nume))
                     if nume < 9999:
                         nums_in_request.append(Numer.num2roman(nume))
-            elif Numer.is_roman(str.upper(word)):
+            elif Numer.is_roman(str.upper(word)):   # Check if Roman number
                 nums_in_request.append(word)
                 t = Numer.roman2numITER(word)
                 nums_in_request.append(str(t))
                 nums_in_request.append(str(Numer.num2text(t)))
-            elif word in Numer.units:
+            elif word in Numer.units:   # Check if text form (only 0-9)
                 nums_in_request.append(word)
                 t = Numer.text2numITER(word)
                 nums_in_request.append(str(t))
@@ -126,7 +139,7 @@ def splitter(request):              # Creates subrequests
             else:
                 final.append(word)
 
-        final.extend(nums_in_request)   # !!! MUST BE EDITTED !!!
+        final.extend(nums_in_request)   # Add numbers simply !!! MUST BE EDITTED !!!
         return final
     else:
         return 0    
@@ -139,33 +152,46 @@ def search(f_request):
                                  db='textdb',
                                  charset='utf8',
                                  cursorclass=pymysql.cursors.DictCursor)
-    limit = 9600
-    thrds = 12
-    ch = int(limit/thrds)
+    limit = 1200
+    # thrds = 2
+    # ch = int(limit/thrds)
     with connection.cursor() as cur:
         cur.execute(f'SELECT * FROM corpora LIMIT {limit}')     # Limited for now
         rows = cur.fetchall()
-
-        que = queue.Queue()
-        threads_list = list()
-        for i in range(0, limit, ch):
-            task = threading.Thread(target=lambda q, arg1: q.put(main_search(rows[i:i+ch], f_request)), args=(que, (rows[i:i+ch], f_request)))
-            threads_list.append(task)
-        for t in threads_list:
-            t.start()
-        for t in threads_list:
-            t.join()
-        return que.get()
+        return main_search(rows, f_request)
+        # que = queue.Queue()   # Not working 
+        # tasks = list()
+        # for i in range(0, thrds):
+        #     print(i*ch, (i+1)*ch)
+        #     try:
+        #         tasks[i] = threading.Thread(target=lambda q, arg1: q.put(main_search(rows[i*ch:(i+1)*ch], f_request)), args=(que, (rows[i*ch:(i+1)*ch], f_request)))
+        #     except IndexError:
+        #         pass
+        # for t in tasks:
+        #     t.start()     # Gets killed on start
+        # for t in tasks:
+        #     t.join()
+        # return que.get()
 
     
 def score(search_result, limit=10):     # Clean and show search results
     final = {}
-    for text in search_result:
+    text_r, kw_r = search_result
+    for text in text_r:             # 'text' search result
         sum = 0
-        for word in search_result[text]:
-            sum += search_result[text][word]
+        t = text_r[text]
+        for word in t:
+            sum += t[word]
         final[text] = sum
-
+    for text in kw_r:               # 'keywords' search result
+        sum = 0
+        t = kw_r[text]
+        for word in t:
+            sum += t[word]
+        if text in final:
+            final[text] += sum
+        else:
+            final[text] = sum
 
     result = []
     if len(final) >= limit:
@@ -195,8 +221,6 @@ def find():
     string = splitter(request)
     print(len(string), string)
     s = search(string)
-    # with open('LOG.txt', 'w', encoding='utf-8') as f:
-    #     f.write(str(s))
     score(s)
     print("--- %s seconds ---" % (time.time() - start_time))
 
@@ -206,5 +230,7 @@ def find_r(request):
     string = splitter(request)
     print(len(string), string)
     s = search(string)
+    with open('LOG.txt', 'w', encoding='utf-8') as f:
+        f.write(str(s))
     score(s)
     print("--- %s seconds ---" % (time.time() - start_time))
